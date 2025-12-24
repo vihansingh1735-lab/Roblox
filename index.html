@@ -2,52 +2,85 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Roblox Avatar Viewer</title>
+
 <style>
 body {
-    background: #0f0f0f;
-    color: white;
-    font-family: Arial, sans-serif;
-    text-align: center;
-    padding: 30px;
+    margin: 0;
+    min-height: 100vh;
+    background: #0b0b0b;
+    color: #fff;
+    font-family: Arial, Helvetica, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }
+
+h1 {
+    margin-bottom: 20px;
+    opacity: 0.9;
+}
+
 input {
     padding: 10px;
     width: 220px;
+    border-radius: 5px;
+    border: none;
+    outline: none;
 }
+
 button {
-    padding: 10px 15px;
+    padding: 10px 16px;
+    margin-left: 5px;
+    border: none;
+    border-radius: 5px;
     cursor: pointer;
+    background: #2ecc71;
+    color: black;
+    font-weight: bold;
 }
-img {
-    margin-top: 20px;
-    width: 200px;
+
+button:hover {
+    opacity: 0.9;
+}
+
+#avatar {
+    margin-top: 25px;
+    width: 220px;
+    height: 220px;
     border-radius: 10px;
+    display: none;
 }
 </style>
 </head>
+
 <body>
 
 <h1>Roblox Avatar Viewer</h1>
 
-<input id="usernameInput" placeholder="Roblox Username">
-<button onclick="loadAvatar()">Get Avatar</button>
+<div>
+    <input id="usernameInput" placeholder="Roblox Username">
+    <button onclick="loadAvatar()">Get Avatar</button>
+</div>
 
-<br>
-<img id="avatar">
+<img id="avatar" alt="Avatar">
 
 <script>
 async function getRobloxUserId(username) {
-    const res = await fetch("https://users.roblox.com/v1/usernames/users", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            usernames: [username],
-            excludeBannedUsers: false
-        })
-    });
+    const res = await fetch(
+        `https://users.roblox.com/v1/users/search?keyword=${encodeURIComponent(username)}&limit=10`
+    );
+
+    if (!res.ok) throw new Error("Roblox API error");
+
     const data = await res.json();
-    if (!data.data.length) throw new Error("User not found");
+
+    if (!data.data || data.data.length === 0) {
+        throw new Error("User not found");
+    }
+
     return data.data[0].id;
 }
 
@@ -55,18 +88,26 @@ async function getRobloxAvatar(userId) {
     const res = await fetch(
         `https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${userId}&size=420x420&format=Png`
     );
+
+    if (!res.ok) throw new Error("Avatar fetch failed");
+
     const data = await res.json();
     return data.data[0].imageUrl;
 }
 
 async function loadAvatar() {
-    const username = document.getElementById("usernameInput").value;
+    const username = document.getElementById("usernameInput").value.trim();
+    if (!username) return alert("Enter a username");
+
     try {
         const userId = await getRobloxUserId(username);
         const avatarUrl = await getRobloxAvatar(userId);
-        document.getElementById("avatar").src = avatarUrl;
-    } catch (e) {
-        alert(e.message);
+
+        const img = document.getElementById("avatar");
+        img.src = avatarUrl;
+        img.style.display = "block";
+    } catch (err) {
+        alert(err.message);
     }
 }
 </script>
